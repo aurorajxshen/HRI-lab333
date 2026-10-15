@@ -1,0 +1,71 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{array,tabularx}
+\usepackage{graphicx,xcolor,float}
+\usepackage[hidelinks]{hyperref}
+
+% Fill in the placeholders. Add table rows as needed.
+\renewcommand{\thesection}{\arabic{section}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.25}
+\newcommand{\fillin}[1]{\textcolor{gray}{\textit{[#1]}}}
+\newcommand{\entry}[2]{\par\medskip\noindent\textbf{#1}\par\fillin{#2}\par}
+\newcommand{\blank}{\fillin{---}}
+\newcommand{\figureplaceholder}[1]{\fbox{\parbox[c][1in][c]{0.92\linewidth}{\centering\fillin{#1}}}}
+
+\title{Lab 3: GenAI for HRI\\
+\large INFO 5356: Introduction to Human-Robot Interaction}
+\author{
+\IEEEauthorblockN{\fillin{Author 1, Author 2, Author 3}}
+\IEEEauthorblockA{Cornell Tech\\
+\{\fillin{netid1, netid2, netid3}\}@cornell.edu}
+}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+
+Motivate the project--what problem do you plan to solve and how does it relate to HRI research more broadly (one paragraph).
+
+Briefly describe prior work (one paragraph).
+
+Describe research gaps and why they are important (one paragraph).
+
+Describe how your project addresses the stated research gaps and the angle you are taking to solve the problem (one paragraph).
+
+% Define research gaps / hypotheses
+Our work addressed the following \textbf{research questions}:
+\begin{itemize}
+    \item \textbf{RQ1:}
+    \item \textbf{RQ2:}
+\end{itemize}
+
+% Take a photo of the robot in a HRI and include it as a figure on the first page of the report (1 point)
+\begin{figure}[H]
+\centering
+\figureplaceholder{Insert image of HRI scenario.}
+\caption{Add an informative caption. By reading this caption, I should understand the overall goal and unique aspects depicted.}
+\end{figure}
+
+\section{Background}
+
+% Define 1-2 themes of research most relevant to your project and write one paragraph for each theme and describe research gaps you plan to address within those themes.
+\subsection{Research theme 1}
+\subsection{Research theme 2}
+
+\section{Robot Control Architecture}
+
+\section{Evaluation}
+\subsection{Experimental Design}
+\subsection{Study Trials}
+\subsection{Study Task} 
+\subsection{Metrics} 
+
+\section{Results}
+
+\section{Discussion}
+
+\section{Future Work \& Limitations}
+
+\end{document}

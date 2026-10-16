@@ -1,0 +1,246 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{array,tabularx}
+\usepackage{graphicx,xcolor,float}
+\usepackage{booktabs,amsmath,enumitem}
+\usepackage[hidelinks]{hyperref}
+
+% Fill in the placeholders. Add table rows as needed.
+\renewcommand{\thesection}{\arabic{section}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.25}
+\newcommand{\fillin}[1]{\textcolor{gray}{\textit{[#1]}}}
+\newcommand{\entry}[2]{\par\medskip\noindent\textbf{#1}\par\fillin{#2}\par}
+\newcommand{\blank}{\fillin{---}}
+\newcommand{\figureplaceholder}[1]{\fbox{\parbox[c][1in][c]{0.92\linewidth}{\centering\fillin{#1}}}}
+\newcommand{\drafttodo}[1]{\par\smallskip\noindent\textcolor{red!65!black}{\textbf{[TO COMPLETE:} #1\textbf{]}}\par\smallskip}
+\newcommand{\confused}{\textsc{confused}}
+\newcommand{\notconfused}{\textsc{not confused}}
+\newcommand{\uncertain}{\textsc{uncertain}}
+
+\title{From Confusion Detection to Adaptive Assistance\\
+in Human--Robot Storytelling with Reachy Mini\\
+\large INFO 5356: Introduction to Human--Robot Interaction --- Lab 3}
+\author{
+\IEEEauthorblockN{Fanning Yifan Luo, Aurora Jiaxin Shen, Elliot Qiyang Zhang, and Jaclyn Pham}
+\IEEEauthorblockA{Cornell Tech\\
+NetIDs: yl4389, js3996, qz432, cqp4}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Detecting possible confusion and providing timely support are important challenges for conversational social robots. We outline a small-scale evaluation of confusion-aware interaction using Reachy Mini during collaborative storytelling; robot integration and participant data collection are planned, not yet completed. The first research question examines whether adding visual observations to language context improves confusion detection relative to a language-only approach. The second investigates whether an LLM-driven policy that offers clarification when confusion is detected improves participants' storytelling experience and story comprehension compared with a baseline without proactive assistance. We propose two user-facing interaction conditions, while language-only and vision-language detectors process paired interaction checkpoints for the detection comparison. Both methods use pretrained generative AI models without additional model training. This document specifies the research motivation, relevant prior work, proposed robot architecture, participants, experimental design, data sources, objective metrics, and planned analysis. The actual model configuration, study outcomes, and interpretation will be added after implementation and data collection.
+\end{abstract}
+
+% Independent LaTeX entrypoint based on the professor's IEEE conference template.
+% This file does NOT modify run_file.tex.
+% Compile: pdflatex lab3_confusion_storytelling_draft.tex (twice).
+% Replace [TO COMPLETE] markers after implementation and data collection.
+
+\section{Introduction}
+% Instructor requests a photograph of the robot in an HRI scenario.
+% Replace the placeholder with an actual photo after implementing the robot.
+\begin{figure}[H]
+\centering
+\figureplaceholder{Insert an actual Reachy Mini HRI photo}
+\caption{Planned collaborative storytelling interaction. Replace with a real photograph illustrating participant--robot interaction and the confusion-aware response.}
+\label{fig:hri-scenario}
+\end{figure}
+
+
+\subsection{Problem Motivation and Scope}
+Successful everyday conversation with social robots requires more than recognizing words or generating fluent responses. A robot must also attend to signals that a conversational partner is uncertain, misunderstands information, or has difficulty following the interaction. If potential confusion goes unnoticed, a robot may continue the conversation without addressing the user's difficulty. Conversely, offering clarification at an appropriate moment may make an interaction easier to follow and more supportive. However, a robot may also interrupt a user who is simply thinking; confusion-aware assistance therefore requires both cautious state estimation and an appropriate response policy.
+
+Human confusion is not always expressed verbally. A user may say ``I don't understand,'' ask a clarifying question, hesitate, or display potentially relevant facial or head movements. Such cues are not definitive: an individual may frown while concentrating or remain silent without being confused. Prior HRI research has examined the relationship between confusion and multimodal behavioral signals, including gaze, head pose, speech, and silence \cite{li2023hmm,li2023invoking}. These findings motivate testing language-only and multimodal approaches without assuming that a robot can directly observe a person's internal mental state.
+
+We use collaborative storytelling with the Reachy Mini robot as an embodied testbed. During a shared narrative, participants may encounter unfamiliar details, uncertainty about plot relationships, or difficulty deciding how to proceed. Our investigation focuses on \emph{narrative confusion}: a momentary difficulty understanding or following the story, rather than all forms of negative affect. We examine whether pretrained generative AI models can identify signs of such confusion and whether offering limited, context-appropriate clarification improves the interaction. Our goal is an end-to-end HRI system evaluation, not the development or training of a new confusion detection model.
+
+\drafttodo{The teammate responsible for the scenario should add the specific storytelling prompts, participant instructions, typical confusion opportunities, and the Google Drive URL for a video of Reachy Mini in an HRI scenario.}
+
+\subsection{Research Goal and Research Questions}
+Our overall goal is to investigate how generative AI can support \emph{confusion detection and timely assistance} during collaborative human--robot storytelling.
+
+\noindent\textbf{RQ1 (Detection):} \emph{Does incorporating visual information into language-based confusion detection improve Reachy Mini's accuracy in identifying user confusion during collaborative storytelling?}
+
+\noindent\textbf{RQ2 (Assistance):} \emph{Does LLM-based, confusion-aware proactive assistance improve users' perceived storytelling experience and story comprehension compared with otherwise similar interaction without proactive assistance?}
+
+These questions address different but connected parts of the same HRI problem. RQ1 concerns what information the robot needs to recognize possible confusion. RQ2 concerns whether using an LLM's detection to guide assistance provides a benefit to the human participant. The sequence of detection followed by response motivates a modular architecture and distinct evaluation measures. We do not assume in advance that multimodal detection or proactive assistance will outperform the alternatives.
+
+
+\section{Background}
+\subsection{Recognizing Confusion in Human--Robot Interaction}
+Li and Ross investigated confusion during situated, task-oriented HRI using a social robot \cite{li2023hmm}. Their later study with 81 participants examined confusion-inducing task interactions and the relationship between reported confusion and observable signals, including gaze, head pose, facial affect indicators, speech, and silence \cite{li2023invoking}. This body of work provides evidence that confusion-related behaviors in HRI can be studied systematically. It also suggests an important methodological caution: observable behavior and self-reported confusion are related, but are not interchangeable. In our experiment, participant ratings will therefore be treated as a reference for evaluation rather than assuming that a particular expression or scripted story event necessarily corresponds to actual confusion.
+
+The prior studies focused on eliciting and analyzing confusion-related signals in situated tasks. Our project builds on that foundation but asks how readily available generative models can be integrated into a deployed Reachy Mini interaction pipeline and how their predictions relate to actual robot assistance during storytelling. We do not claim that recognizing or mitigating confusion in HRI is an entirely new research problem.
+
+\subsection{Generative AI, Multimodal Interaction, and User Experience}
+Kim, Lee, and Mutlu studied interactions with an LLM-powered social robot and identified design considerations specific to embodied conversational systems \cite{kim2024understanding}. Their findings motivate evaluating the robot as an interactive agent rather than evaluating generated text alone. Abbo and Belpaeme presented a vision-enabled dialogue implementation for a social robot that incorporated visual input into a language-model-based dialogue system \cite{abbo2025blind}. This establishes an implementation precedent for augmenting conversational context with camera observations. Janssens and colleagues investigated whether LLMs can predict user enjoyment from dialogue context \cite{janssens2025online}, demonstrating interest in computational estimates of user experience while also underscoring the distinction between model predictions and users' responses.
+
+Collaborative storytelling itself has also been used as a testbed for generative AI in social robotics. Zabala and colleagues reported a preliminary multimodal collaborative storytelling system with Pepper, using an LLM and visual object recognition to support story creation \cite{zabala2025storytelling}. Their work motivates storytelling as an HRI setting but does not answer our specific comparison of confusion detection inputs or the effect of triggered clarification on users' experience with Reachy Mini.
+
+\subsection{Research Gap and Proposed Contribution}
+Prior research establishes that confusion can be investigated through observable HRI signals, that LLM-powered dialogue creates distinctive design challenges, and that visual context can be integrated into social robot conversations. What remains to be assessed in our selected setting is whether visual observations add useful information for \emph{confusion detection} beyond the language transcript, and whether acting on a language-only confusion estimate improves a user's experience and understanding in collaborative storytelling.
+
+We propose a small-scale, systems-focused evaluation with three contributions: (1) a paired comparison of language-only and vision-language confusion predictions on the same storytelling checkpoints; (2) an end-to-end robot response pipeline that maps a possible confusion detection to a limited assistance action; and (3) a comparison of storytelling experiences with and without proactive confusion-aware assistance. These are intended contributions to be evaluated empirically, not established findings.
+
+\section{Robot Control Architecture}
+\subsection{System Goals and Design Principles}
+We plan to design a semi-autonomous, checkpoint-based interaction system with two capabilities. First, it should process conversational evidence and return a standardized estimate of whether the participant appears confused. Second, it should optionally offer brief clarification without disrupting the normal flow of storytelling. We will use pretrained models through an appropriate local or API interface; we do not plan to train or fine-tune new foundation models. Model names, versions, and deployment choices have not yet been selected.
+
+The design prioritizes a measurable end-to-end behavior over unrestricted model generation. We will keep the robot's assistance policy constrained to a small set of responses, log the actual execution, and avoid interpreting any visible facial expression as definitive evidence of an internal mental state. The system will make a prediction only at predefined checkpoints rather than attempting continuous affect tracking throughout a session. This reduces the implementation scope and supports repeatable measurement.
+
+\subsection{Inputs, Modules, Outputs, and Data Flow}
+The proposed pipeline contains the following modules:
+\begin{enumerate}
+\item \textbf{Interaction and checkpoint controller.} Manages the story progression and invokes detection at selected points. During the pilot, the facilitator may start a trial or checkpoint manually.
+\item \textbf{Input acquisition and transcription.} Captures participant speech and converts it to text. For the visual condition, the camera captures an image at the same checkpoint. If a transcript is empty or a face is not visible, the event will be logged rather than silently assumed to represent non-confusion.
+\item \textbf{Language-only detector (LLM).} Receives the transcript and relevant preceding story context; outputs \confused, \notconfused, or \uncertain\ using a fixed evaluation prompt.
+\item \textbf{Vision-language detector (VLM).} Receives the same transcript and story context together with the associated camera image; outputs the same set of labels. Both predictions are recorded for RQ1.
+\item \textbf{Response policy.} In the assistance condition only, uses the LLM prediction to choose a response. A \confused\ label triggers a polite offer of clarification; \notconfused\ continues the usual interaction; \uncertain\ does not trigger an unsolicited explanation. An explicit user request for help can still be honored in either condition.
+\item \textbf{Robot actuation and logger.} Converts the selected response into robot speech and optional predefined head movement, and records prediction labels, timestamps, commands, and execution outcomes.
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\setlength{\fboxsep}{7pt}
+\fbox{\parbox{0.82\linewidth}{\centering\textbf{Storytelling checkpoint}\\Human speech + recent narrative context; camera frame}}\\[7pt]
+$\downarrow$\\[3pt]
+\fbox{\parbox{0.82\linewidth}{\centering\textbf{Input processing}\\Speech-to-text and synchronized image acquisition}}\\[7pt]
+$\downarrow$\\[3pt]
+\fbox{\parbox{0.82\linewidth}{\centering\textbf{Paired detectors}\\LLM: text-only \quad\textbar\quad VLM: text + image\\Both predictions logged for RQ1}}\\[7pt]
+$\downarrow$\\[3pt]
+\fbox{\parbox{0.82\linewidth}{\centering\textbf{Response controller}\\Baseline: no proactive clarification\\Assistance: LLM label selects fixed assistance rule}}\\[7pt]
+$\downarrow$\\[3pt]
+\fbox{\parbox{0.82\linewidth}{\centering\textbf{Reachy Mini output}\\Speech / predefined movement; timestamps and outcomes}}
+\caption{Proposed end-to-end control architecture. The VLM runs for paired measurement but does not drive robot assistance in the main two-condition study.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Control Architecture Type}
+The proposed architecture is a \emph{semi-autonomous, feedback-informed hybrid} system. Model inference provides deliberative interpretation of context; a fixed response policy provides a simple and predictable mapping from labels to robot behavior. Interaction is repeated at multiple checkpoints, allowing new participant inputs to affect subsequent robot responses. A facilitator may manage session timing and manually trigger checkpoints, but the planned classification and response policy operate automatically after inputs are captured. We will report any additional manual intervention that occurs during the actual deployment.
+
+The instructor's Lab 3 examples provide starting points for the text-based LLM integration, camera-based VLM integration, and robot actions \cite{coursecode2026}. However, those examples are not themselves a completed confusion detection system. Additional speech input, prompt validation, assistance logic, synchronization, and logging will be required.
+
+\drafttodo{After implementation, name the exact LLM/VLM, model versions, hardware, STT/TTS tools, SDK modules, inference settings, network arrangement, and final architecture type; replace proposed behavior with actual behavior.}
+
+\section{Evaluation}
+\subsection{Participants and Recruitment}
+We plan to recruit approximately four to eight adult participants through convenience sampling, including students who are comfortable participating in an English-language storytelling interaction. Team members may participate if necessary, as allowed by the lab instructions. The study will obtain consent for the interaction and for any audio or images that are recorded or transmitted to external services. No personally identifying information is required in the analysis dataset; we will refer to participants as P01, P02, and so forth. The final participant count and exclusions will be reported after data collection.
+
+\subsection{Independent Variables and Experimental Conditions}
+To answer RQ2, the participant-facing independent variable is whether the robot provides \emph{proactive confusion-aware assistance}. Each participant will complete two storytelling sessions under the following conditions:
+\begin{description}[style=nextline]
+\item[Condition A: Baseline / no proactive assistance.] Reachy Mini participates in storytelling normally, but does not use confusion predictions to initiate clarification. The robot may still answer an explicit participant request.
+\item[Condition B: LLM-based proactive assistance.] Reachy Mini participates in the same style of storytelling. When its language-only confusion detector predicts \confused\ at a checkpoint, it offers a brief clarification. If the participant accepts, the robot gives a short, story-consistent explanation. Other interaction rules remain as similar as possible to the baseline.
+\end{description}
+
+RQ1 does not require a third participant-facing condition. \emph{Both} detectors will process the same checkpoints in both sessions, without the VLM changing the live robot behavior. We therefore compare the language-only and language-plus-vision approaches using paired detection observations. This reduces the number of experimental sessions and helps isolate the extra value of visual information. Ideally, both input configurations will be evaluated using the same vision-capable model family, with an otherwise matched prompt and context. If distinct model families must be used, we will describe RQ1 as a comparison of two \emph{systems}, not a clean causal test of visual input alone.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Study comparisons and their principal measures.}
+\begin{tabular}{@{}p{0.14\linewidth}p{0.43\linewidth}p{0.35\linewidth}@{}}
+\toprule
+\textbf{RQ} & \textbf{Comparison} & \textbf{Main outcomes}\\
+\midrule
+RQ1 & LLM (transcript) vs. VLM (same transcript + image), evaluated on matched checkpoints & Detection accuracy, confusion recall, false-positive rate, inference latency\\
+RQ2 & Baseline vs. LLM-triggered proactive assistance across two storytelling sessions & Perceived support, enjoyment, willingness to continue, story comprehension\\
+\bottomrule
+\end{tabular}
+\label{tab:comparisons}
+\end{table}
+
+\subsection{Study Design, Counterbalancing, and Trial Counts}
+We propose a within-subjects design because each participant can experience both assistance conditions, reducing between-person differences in storytelling preferences. To limit order effects, we will counterbalance the order of conditions (AB vs. BA). Participants will complete two different, approximately comparable story prompts, with story assignment balanced across conditions where feasible.
+
+As a starting plan, each session lasts around three to four minutes and contains three designated confusion assessment checkpoints, including at least one relatively straightforward point. At four to eight participants, this yields 8--16 sessions and 24--48 checkpoint observations; each checkpoint generates an LLM and a VLM prediction. These are repeated observations nested within participants, \emph{not} 24--48 independent participants. We will conduct a brief pilot to check whether the tasks are feasible, whether checkpoints produce enough variation in confusion ratings, and whether the robot can complete responses without excessive delay. The final number of trials, any failed trials, and the counterbalancing assignments will be reported.
+
+\subsection{Study Task and Interaction Workflow}
+Participants will engage in collaborative storytelling with Reachy Mini. At predefined moments, the system records their verbal response and (when available and consented to) a camera image. The robot will then continue the narrative or offer optional clarification according to the assigned assistance condition. Story content and the normal robot storytelling behavior will be kept comparable across conditions. The facilitator may advance a checkpoint or intervene if the system becomes stuck; such interventions will be recorded.
+
+\drafttodo{Insert the teammate's final scenario, story scripts, checkpoint locations, expected human verbal/nonverbal behavior, and the actual level of facilitator intervention.}
+
+\begin{figure}[htbp]
+\centering
+\fbox{\parbox{0.84\linewidth}{\centering\textbf{Consent and short instructions}}}\\[5pt]
+$\downarrow$\\[3pt]
+\fbox{\parbox{0.84\linewidth}{\centering\textbf{Story session 1} (A or B)\\3 checkpoints; paired LLM/VLM predictions and robot logs}}\\[5pt]
+$\downarrow$\\[3pt]
+\fbox{\parbox{0.84\linewidth}{\centering\textbf{Post-session survey}\\Confusion-at-checkpoint recall, experience, comprehension}}\\[5pt]
+$\downarrow$\\[3pt]
+\fbox{\parbox{0.84\linewidth}{\centering\textbf{Story session 2} (other condition)\\Different counterbalanced story; same measurements}}\\[5pt]
+$\downarrow$\\[3pt]
+\fbox{\parbox{0.84\linewidth}{\centering\textbf{Final survey and analysis}\\Paired detection comparison; A vs. B participant outcomes}}
+\caption{Planned participant workflow. Sessions and story prompts will be counterbalanced.}
+\label{fig:workflow}
+\end{figure}
+
+\subsection{Data Sources, Data Types, and Reference Labels}
+Data collection will take place during \emph{inference and interaction}; we do not plan to train a model. For each checkpoint, we intend to record a pseudonymous participant ID, story ID, session order, condition, checkpoint number, user transcript, image availability, both detector predictions, model processing times, any assistance decision, the actual robot action, execution success, and response timestamps. With consent, raw audio/video may be temporarily available for reviewing ambiguous events; otherwise we will retain only the minimum data needed for analysis. We will not publish identifiable participant images or recordings without explicit permission.
+
+After each session, participants will review brief descriptions of the three checkpoints and rate how confused they felt \emph{before the robot's subsequent response}, using a 1--5 scale (1 = not at all confused; 5 = extremely confused). We provisionally define ratings 1--2 as \notconfused\ and 4--5 as \confused. Ratings of 3 are ambiguous and will be reported separately rather than silently forced into a binary class. We will report how many checkpoints receive each label. The retrospective measure may have recall bias and can be influenced by the assistance that follows; this limitation will be discussed.
+
+The planned counts are two session-level experience questionnaires per participant, about three comprehension questions per session (focused on standardized story facts), and three confusion ratings per session. The exact number of valid transcripts, images, model predictions, ratings, robot actions, and missing cases must be reported in the finished paper.
+
+\subsection{Dependent Variables and Objective Metrics}
+For \textbf{RQ1}, the primary metric will be binary confusion-detection accuracy on checkpoints with a non-ambiguous participant reference rating:
+\begin{equation}
+\mathrm{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN}.
+\end{equation}
+Because class frequencies may be unequal, we will additionally report confusion recall $TP/(TP+FN)$, precision $TP/(TP+FP)$ when defined, false-positive rate $FP/(FP+TN)$, and the number of ambiguous or unclassifiable cases. Both detectors will be evaluated against the same participant-reported labels. We will also record inference latency from submission of the available input to receipt of a validated detector label.
+
+For \textbf{RQ2}, the primary subjective outcomes will be three separate 1--7 questionnaire items: perceived support (``I felt supported by Reachy Mini during the story''), enjoyment (``The storytelling interaction was enjoyable''), and willingness to continue (``I would like to continue storytelling with Reachy Mini''). We will analyze these as exploratory ratings rather than assume they constitute a validated multi-item scale. An additional objective participant outcome will be story comprehension accuracy, calculated as the number of correct answers divided by the number of standardized comprehension questions.
+
+To meet the assignment's end-to-end system evaluation requirement, we will also measure \emph{robot action execution success}, defined as the proportion of issued response actions for which the robot actually starts and completes the intended predefined behavior; and \emph{assistance precision}, defined as the proportion of proactive clarification offers that correspond to participant-reported confusion, when the denominator is nonzero. End-to-end assistance latency will be measured from the end of the evaluated participant input to the beginning of the robot's proactive response. Because baseline sessions do not contain this proactive event, this latency will be reported for triggered assistance events, rather than misleadingly treated as a matched baseline response time.
+
+\subsection{Planned Analysis}
+For RQ1, we will calculate each detector's classification metrics using the same checkpoint observations, report the paired differences in correct and incorrect predictions, and summarize latency using means, standard deviations, and the number of valid events. We will examine whether the addition of images appears most useful for checkpoints in which the transcript contains little explicit evidence of confusion; this will be exploratory because the sample is small.
+
+For RQ2, we will summarize experience ratings and comprehension scores by assistance condition. We will present participant-level paired comparisons and group descriptive statistics (means and standard deviations where appropriate), while reporting the number of times proactive assistance was actually offered and accepted. A condition with few triggered offers provides weak evidence about assistance effectiveness even if user ratings differ. We will not make strong population-level causal claims from a small convenience sample or from any unbalanced story materials.
+
+\section{Results}
+\drafttodo{Fill ONLY after running the study. Report actual participant count; trials completed and excluded; confusion rating class frequencies; LLM/VLM accuracy, recall, false positives, latency; assistance trigger and execution counts; participant experience ratings and comprehension means/SDs by condition. Include a results table and/or figure. Identify the numerically best and worst conditions. Do not replace this with invented numbers.}
+
+\section{Discussion}
+\drafttodo{Fill after Results. Organize into themes: (1) Does visual context add confusion-detection value? (2) Did assistance help or disrupt storytelling? (3) What is the accuracy--latency trade-off and what does it imply for HRI? Compare actual findings with the cited HRI research and state the contribution only to the extent supported by the data.}
+
+\section{Future Work \& Limitations}
+\subsection{Ambiguity and Measurement of Confusion}
+Confusion is an internal and context-dependent state rather than a directly observable facial expression. Self-reports provide a practical reference, but post-session ratings may suffer from recall bias, and people can express uncertainty in different ways. Brief camera snapshots may miss relevant behavior or be difficult to interpret. These factors limit the certainty with which an apparent correct classification can be interpreted as recognition of genuine confusion. Future work could use improved temporal measurements and multiple reference sources while remaining cautious about inferring mental states from appearance.
+
+\subsection{Scale, Story Effects, and Implementation Constraints}
+A short experiment with four to eight convenience-sampled participants and a few storytelling checkpoints is unlikely to represent the variability of everyday human--robot conversation. Story difficulty, language proficiency, prior familiarity with Reachy Mini, camera angle, and the timing of model requests could influence outcomes. The within-subjects design reduces some individual differences but does not eliminate order or learning effects. Also, comparing two different pretrained model families would confound the effect of adding vision with other model differences. Future studies should examine larger and more diverse samples, additional stories, better matched models, and longer interactions. These are anticipated limitations that should be updated after implementation and data collection.
+
+\section*{Code and Demonstration Materials}
+\drafttodo{Add public team GitHub repository link containing runnable code, configuration instructions, and dependency list. Add Google Drive video demonstration URL and confirm it can be viewed by graders. The instructor-provided examples are a starting point, not a substitute for your team's public repository.}
+
+% Bibliography is self-contained in this new file; original references.bib remains unchanged.
+\begin{thebibliography}{9}
+\bibitem{li2023hmm} N. Li and R. Ross, ``Hmm, You Seem Confused! Tracking Interlocutor Confusion for Situated Task-Oriented HRI,'' in \emph{Proceedings of the 2023 ACM/IEEE International Conference on Human--Robot Interaction}, 2023, pp. 142--151. doi: \href{https://doi.org/10.1145/3568162.3576999}{10.1145/3568162.3576999}.
+\bibitem{li2023invoking} N. Li and R. Ross, ``Invoking and Identifying Task-Oriented Interlocutor Confusion in Human--Robot Interaction,'' \emph{Frontiers in Robotics and AI}, vol. 10, article 1244381, 2023. doi: \href{https://doi.org/10.3389/frobt.2023.1244381}{10.3389/frobt.2023.1244381}.
+\bibitem{kim2024understanding} C. Y. Kim, C. P. Lee, and B. Mutlu, ``Understanding Large-Language Model (LLM)-Powered Human--Robot Interaction,'' in \emph{Proceedings of the 2024 ACM/IEEE International Conference on Human--Robot Interaction}, 2024, pp. 371--380. doi: \href{https://doi.org/10.1145/3610977.3634966}{10.1145/3610977.3634966}.
+\bibitem{abbo2025blind} G. A. Abbo and T. Belpaeme, ``I Was Blind but Now I See: Implementing Vision-Enabled Dialogue in Social Robots,'' in \emph{Proceedings of the 2025 ACM/IEEE International Conference on Human--Robot Interaction}, 2025, pp. 1176--1180. doi: \href{https://doi.org/10.1109/HRI61500.2025.10973830}{10.1109/HRI61500.2025.10973830}.
+\bibitem{janssens2025online} R. Janssens, A. Pereira, G. Skantze, B. Irfan, and T. Belpaeme, ``Online Prediction of User Enjoyment in Human--Robot Dialogue with LLMs,'' in \emph{Proceedings of the 2025 ACM/IEEE International Conference on Human--Robot Interaction}, 2025, pp. 1363--1367. doi: \href{https://doi.org/10.1109/HRI61500.2025.10973944}{10.1109/HRI61500.2025.10973944}.
+\bibitem{zabala2025storytelling} U. Zabala, J. Echevarria, I. Rodriguez, and E. Lazkano, ``Exploring Multimodal Collaborative Storytelling with Pepper: A Preliminary Study with Zero-Shot LLMs,'' \emph{Frontiers in Robotics and AI}, vol. 12, 2025. doi: \href{https://doi.org/10.3389/frobt.2025.1662819}{10.3389/frobt.2025.1662819}.
+\bibitem{coursecode2026} Cornell Tech HRI Teaching Team, ``Reachy Mini + AI: LLM, VLM, VLA,'' 2026. [Online]. Available: \url{https://github.com/Cornell-Tech-HRI-Students-2026/lab3}.
+\end{thebibliography}
+
+\appendix
+\section{Proposed Survey Items and Logging Fields}
+\noindent\textbf{Checkpoint confusion rating} (administered after the session, referring to a specific moment): ``Just before the robot responded at this moment, how confused were you about what was happening in the story?'' Scale: 1 (not at all) to 5 (extremely).
+
+\noindent\textbf{Post-session experience items} (1 = strongly disagree; 7 = strongly agree): (i) ``I felt supported by Reachy Mini during the story''; (ii) ``The storytelling interaction was enjoyable''; (iii) ``I would like to continue storytelling with Reachy Mini.''
+
+\noindent\textbf{Comprehension items:} Three short questions about standardized facts in each assigned story, with answer keys prepared before data collection. Avoid grading facts freely introduced by the participant.
+
+\noindent\textbf{Proposed log schema:}
+\begin{itemize}
+\item Study identifiers: \texttt{participant\_id}, \texttt{session\_id}, \texttt{condition}, \texttt{story\_id}, \texttt{checkpoint\_id}.
+\item Inputs and labels: \texttt{transcript}, \texttt{image\_available}, \texttt{llm\_prediction}, \texttt{vlm\_prediction}, \texttt{self\_report\_rating}.
+\item Robot outputs: \texttt{robot\_action}, \texttt{action\_executed}.
+\item Timing: \texttt{inference\_latency\_ms}, \texttt{response\_latency\_ms}.
+\end{itemize}
+
+\end{document}
